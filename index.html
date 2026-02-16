@@ -1160,13 +1160,17 @@
                 let lastBlob = null;
                 let minQuality = 0.1;
                 let maxQuality = quality;
+                let mimeType = originalFile.type;
+
+                // If PNG and target size is small, try JPEG conversion for better compression
+                let convertedToJPEG = false;
 
                 while (attempts < maxAttempts) {
                     attempts++;
                     const progress = (attempts / maxAttempts) * 100;
                     updateProgress(Math.min(progress, 95));
 
-                    const blob = await compressWithQuality(img, quality, originalFile.type);
+                    const blob = await compressWithQuality(img, quality, mimeType);
                     lastBlob = blob;
 
                     const sizeDiff = blob.size - targetSizeBytes;
@@ -1186,6 +1190,16 @@
                     }
 
                     if (maxQuality - minQuality < 0.01) {
+                        // If PNG compression failed and we haven't tried JPEG yet
+                        if (mimeType === 'image/png' && !convertedToJPEG && blob.size > targetSizeBytes) {
+                            convertedToJPEG = true;
+                            mimeType = 'image/jpeg';
+                            minQuality = 0.1;
+                            maxQuality = 0.8;
+                            quality = 0.5;
+                            attempts = 0; // Reset attempts for JPEG compression
+                            continue;
+                        }
                         compressedBlob = blob;
                         break;
                     }
@@ -1203,7 +1217,11 @@
                 } else {
                     updateProgress(100);
                     displayCompressedImage();
-                    showSuccess('Image compressed successfully!');
+                    if (convertedToJPEG) {
+                        showSuccess('Image compressed successfully! (Converted PNG to JPEG for better compression)');
+                    } else {
+                        showSuccess('Image compressed successfully!');
+                    }
                 }
             } catch (error) {
                 showError('Compression failed: ' + error.message);
