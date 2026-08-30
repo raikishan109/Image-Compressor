@@ -40,12 +40,10 @@ export function ensurePDFLibrariesLoaded() {
         }
 
         if (promises.length > 0) {
-            Toast.show('Loading PDF Engine...', 'info');
             try {
                 await Promise.all(promises);
-                Toast.show('PDF Engine Loaded!', 'success');
             } catch (err) {
-                Toast.show(err.message, 'error');
+                console.error('PDF Engine loading error:', err);
                 throw err;
             }
         }
@@ -96,27 +94,29 @@ export function initToolGrid() {
     const grid = UI.toolDashboard;
     if (!grid) return;
 
-    grid.innerHTML = Object.entries(TOOLS).map(([name, config]) => `
-        <div class="tool-card ${config.type}-tool" data-tool="${name}">
-            <div class="tool-card-icon" style="color: ${config.color};">
-                ${config.icon}
+    if (!grid.children || grid.children.length === 0) {
+        grid.innerHTML = Object.entries(TOOLS).map(([name, config]) => `
+            <div class="tool-card ${config.type}-tool" data-tool="${name}">
+                <div class="tool-card-icon" style="color: ${config.color};">
+                    ${config.icon}
+                </div>
+                <div class="tool-card-info">
+                    <div class="tool-card-title">${config.label}</div>
+                    <div class="tool-card-description">${config.description}</div>
+                </div>
             </div>
-            <div class="tool-card-info">
-                <div class="tool-card-title">${config.label}</div>
-                <div class="tool-card-description">${config.description}</div>
+        `).join('') + `
+            <div class="tool-card coming-soon" data-tool="COMING SOON">
+                <div class="tool-card-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                </div>
+                <div class="tool-card-info">
+                    <div class="tool-card-title">More New Tools</div>
+                    <div class="tool-card-description">New compression tools are on the way</div>
+                </div>
             </div>
-        </div>
-    `).join('') + `
-        <div class="tool-card coming-soon" data-tool="COMING SOON">
-            <div class="tool-card-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-            </div>
-            <div class="tool-card-info">
-                <div class="tool-card-title">More New Tools</div>
-                <div class="tool-card-description">New compression tools are on the way</div>
-            </div>
-        </div>
-    `;
+        `;
+    }
     
     updateSectionUI(store.currentSection, false);
 }
@@ -194,8 +194,7 @@ function renderTool(toolName) {
         : `Upload your ${isMerger || toolName === 'BULK COMPRESS' ? 'files' : 'file'} to begin ${tool.label.toLowerCase()}`;
     
     // Toggle Tool-Specific UI Elements
-    const isFastSqueeze = toolName === 'FAST SQUEEZE';
-    UI.imageOptions.style.display = (isPDF || isConverter || isFastSqueeze) ? 'none' : 'block';
+    UI.imageOptions.style.display = (isPDF || isConverter) ? 'none' : 'block';
     UI.pdfOptions.style.display = (isPDF && !isEditor && !isMerger) ? 'block' : 'none';
     UI.pdfEditorWorkspace.style.display = isEditor ? 'block' : 'none';
     UI.converterOptions.style.display = isConverter ? 'block' : 'none';
@@ -216,7 +215,7 @@ function renderTool(toolName) {
     }
     
     // Update Button Text
-    UI.processBtn.textContent = isEditor ? 'Save & Download' : (isMerger ? 'Merge & Save' : (isPDF ? 'Process PDF' : (isFastSqueeze ? 'Squeeze Now' : 'Compress Now')));
+    UI.processBtn.textContent = isEditor ? 'Save & Download' : (isMerger ? 'Merge & Save' : (isPDF ? 'Process PDF' : 'Compress Now'));
 
     // Multi-file support
     if (isMerger || toolName === 'BULK COMPRESS') {

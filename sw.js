@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kbify-v3.0';
+const CACHE_NAME = 'kbify-v4.0';
 
 // Install Event - NO cache.addAll to avoid broken state
 self.addEventListener('install', (e) => {

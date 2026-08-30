@@ -41,33 +41,6 @@ export async function processFile() {
         return await mergePDFs();
     }
 
-    if (store.activeTool === 'FAST SQUEEZE') {
-        startProcessing();
-        try {
-            const file = store.originalFile;
-            const img = await loadImage(file);
-            let mimeType = file.type;
-            let convertedToJPEG = false;
-            
-            // Automatic PNG-to-JPEG conversion to hit optimized squeeze size
-            if (mimeType === 'image/png' && file.size > 500 * 1024) {
-                mimeType = 'image/jpeg';
-                convertedToJPEG = true;
-            }
-            
-            const blob = await compressWithQuality(img, 0.72, mimeType);
-            const finalBlob = blob.size < file.size ? blob : file;
-            store.compressedBlob = finalBlob;
-            
-            handleSuccess(convertedToJPEG);
-        } catch (error) {
-            Toast.show('Fast Squeeze failed: ' + error.message, 'error');
-        } finally {
-            endProcessing();
-        }
-        return;
-    }
-
     const targetSizeKB = parseInt(document.getElementById('customSize')?.value);
     if (!targetSizeKB || targetSizeKB < 1) {
         Toast.show('Please enter a valid target size', 'error');
