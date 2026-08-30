@@ -6,9 +6,11 @@ import { compressPDF } from '../pdf/compressor.js';
 import { editPDF } from '../pdf/editor.js';
 import { convertImage } from './converter.js';
 import { mergePDFs } from '../pdf/merger.js';
+import { ensurePDFLibrariesLoaded } from '../../navigation.js';
+
 
 export async function processFile() {
-    const isMultiFileTool = store.activeTool === 'Merge PDF' || store.activeTool === 'Bulk Compress';
+    const isMultiFileTool = store.activeTool === 'MERGE PDF' || store.activeTool === 'BULK COMPRESS';
     
     if (!store.originalFile && !isMultiFileTool) {
         Toast.show(`Please select ${store.currentFileType === 'pdf' ? 'a PDF' : 'an image'} first`, 'error');
@@ -20,20 +22,50 @@ export async function processFile() {
         return;
     }
 
-    if (store.activeTool === 'PDF Compressor') {
+    if (store.activeTool === 'PDF COMPRESSOR') {
+        await ensurePDFLibrariesLoaded();
         return await compressPDF();
     }
     
-    if (store.activeTool === 'PDF Editor') {
+    if (store.activeTool === 'PDF EDITOR') {
+        await ensurePDFLibrariesLoaded();
         return await editPDF();
     }
 
-    if (store.activeTool === 'Image Converter') {
+    if (store.activeTool === 'IMAGE CONVERTER') {
         return await convertImage();
     }
 
-    if (store.activeTool === 'Merge PDF') {
+    if (store.activeTool === 'MERGE PDF') {
+        await ensurePDFLibrariesLoaded();
         return await mergePDFs();
+    }
+
+    if (store.activeTool === 'FAST SQUEEZE') {
+        startProcessing();
+        try {
+            const file = store.originalFile;
+            const img = await loadImage(file);
+            let mimeType = file.type;
+            let convertedToJPEG = false;
+            
+            // Automatic PNG-to-JPEG conversion to hit optimized squeeze size
+            if (mimeType === 'image/png' && file.size > 500 * 1024) {
+                mimeType = 'image/jpeg';
+                convertedToJPEG = true;
+            }
+            
+            const blob = await compressWithQuality(img, 0.72, mimeType);
+            const finalBlob = blob.size < file.size ? blob : file;
+            store.compressedBlob = finalBlob;
+            
+            handleSuccess(convertedToJPEG);
+        } catch (error) {
+            Toast.show('Fast Squeeze failed: ' + error.message, 'error');
+        } finally {
+            endProcessing();
+        }
+        return;
     }
 
     const targetSizeKB = parseInt(document.getElementById('customSize')?.value);
@@ -48,68 +80,97 @@ export async function processFile() {
     startProcessing();
 
     try {
-        const img = await loadImage(store.originalFile);
-        let attempts = 0;
-        const maxAttempts = 20;
-        let lastBlob = null;
-        let minQuality = 0.1;
-        let maxQuality = quality;
-        let mimeType = store.originalFile.type;
-        let convertedToJPEG = false;
-
-        while (attempts < maxAttempts) {
-            attempts++;
-            store.progress = (attempts / maxAttempts) * 90;
-
-            const blob = await compressWithQuality(img, quality, mimeType);
-            lastBlob = blob;
-
-            const sizeDiff = blob.size - targetSizeBytes;
-            const tolerance = targetSizeBytes * 0.05;
-
-            if (Math.abs(sizeDiff) <= tolerance) {
-                store.compressedBlob = blob;
-                break;
+        if (store.activeTool === 'BULK COMPRESS') {
+            const compressedResults = [];
+            const filesCount = store.originalFiles.length;
+            
+            for (let i = 0; i < filesCount; i++) {
+                const file = store.originalFiles[i];
+                store.progress = Math.round((i / filesCount) * 100);
+                
+                const { blob, convertedToJPEG } = await runCompressionSearch(file, targetSizeBytes, quality);
+                
+                // Fall back to original file if compression didn't help (size increased)
+                const finalBlob = blob.size <= file.size ? blob : file;
+                
+                compressedResults.push({
+                    name: file.name,
+                    originalSize: file.size,
+                    compressedSize: finalBlob.size,
+                    blob: finalBlob
+                });
             }
-
-            if (blob.size > targetSizeBytes) {
-                maxQuality = quality;
-                quality = (minQuality + quality) / 2;
-            } else {
-                minQuality = quality;
-                quality = (quality + maxQuality) / 2;
-            }
-
-            if (maxQuality - minQuality < 0.01) {
-                if (mimeType === 'image/png' && !convertedToJPEG && blob.size > targetSizeBytes) {
-                    convertedToJPEG = true;
-                    mimeType = 'image/jpeg';
-                    minQuality = 0.1;
-                    maxQuality = 0.8;
-                    quality = 0.5;
-                    attempts = 0;
-                    continue;
-                }
-                store.compressedBlob = blob;
-                break;
-            }
-
-            await new Promise(resolve => setTimeout(resolve, 50));
-        }
-
-        if (!store.compressedBlob) store.compressedBlob = lastBlob;
-
-        if (store.compressedBlob.size > store.originalFile.size) {
-            Toast.show(`Unable to compress to ${targetSizeKB}KB. Minimum achievable: ${formatFileSize(store.compressedBlob.size)}`, 'error');
-            store.compressedBlob = null;
+            
+            store.compressedBlobs = compressedResults;
+            store.progress = 100;
+            displayBulkResults();
+            Toast.show(`Compressed ${filesCount} images successfully!`, 'success');
         } else {
-            handleSuccess(convertedToJPEG);
+            // Single file compression
+            const { blob, convertedToJPEG } = await runCompressionSearch(store.originalFile, targetSizeBytes, quality);
+            
+            if (blob.size > store.originalFile.size) {
+                Toast.show(`Unable to compress to ${targetSizeKB}KB. Minimum achievable: ${formatFileSize(blob.size)}`, 'error');
+                store.compressedBlob = null;
+            } else {
+                store.compressedBlob = blob;
+                handleSuccess(convertedToJPEG);
+            }
         }
     } catch (error) {
         Toast.show('Compression failed: ' + error.message, 'error');
     } finally {
         endProcessing();
     }
+}
+
+async function runCompressionSearch(file, targetSizeBytes, baseQuality) {
+    const img = await loadImage(file);
+    let attempts = 0;
+    const maxAttempts = 20;
+    let lastBlob = null;
+    let minQuality = 0.1;
+    let maxQuality = baseQuality;
+    let quality = baseQuality;
+    let mimeType = file.type;
+    let convertedToJPEG = false;
+
+    while (attempts < maxAttempts) {
+        attempts++;
+        const blob = await compressWithQuality(img, quality, mimeType);
+        lastBlob = blob;
+
+        const sizeDiff = blob.size - targetSizeBytes;
+        const tolerance = targetSizeBytes * 0.05;
+
+        if (Math.abs(sizeDiff) <= tolerance) {
+            return { blob, convertedToJPEG };
+        }
+
+        if (blob.size > targetSizeBytes) {
+            maxQuality = quality;
+            quality = (minQuality + quality) / 2;
+        } else {
+            minQuality = quality;
+            quality = (quality + maxQuality) / 2;
+        }
+
+        if (maxQuality - minQuality < 0.01) {
+            if (mimeType === 'image/png' && !convertedToJPEG && blob.size > targetSizeBytes) {
+                convertedToJPEG = true;
+                mimeType = 'image/jpeg';
+                minQuality = 0.1;
+                maxQuality = 0.8;
+                quality = 0.5;
+                attempts = 0;
+                continue;
+            }
+            return { blob, convertedToJPEG };
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    return { blob: lastBlob, convertedToJPEG };
 }
 
 function startProcessing() {
@@ -134,15 +195,16 @@ function handleSuccess(convertedToJPEG) {
 
 export function loadImage(file) {
     return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => resolve(img);
-            img.onerror = reject;
-            img.src = e.target.result;
+        const img = new Image();
+        img.onload = () => {
+            URL.revokeObjectURL(img.src);
+            resolve(img);
         };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
+        img.onerror = (err) => {
+            URL.revokeObjectURL(img.src);
+            reject(err);
+        };
+        img.src = URL.createObjectURL(file);
     });
 }
 
@@ -164,12 +226,7 @@ function compressWithQuality(img, quality, mimeType) {
 }
 
 function displayResults() {
-    const url = URL.createObjectURL(store.compressedBlob);
-    const preview = document.getElementById('compressedPreview');
-    if (preview) {
-        preview.src = url;
-        preview.style.display = 'block';
-    }
+    // Preview image is reactively rendered by ui-utils.js subscription to store.compressedBlob
 
     const reduction = ((1 - store.compressedBlob.size / store.originalFile.size) * 100).toFixed(1);
     const saved = store.originalFile.size - store.compressedBlob.size;
@@ -186,16 +243,52 @@ function displayResults() {
     });
 }
 
+function displayBulkResults() {
+    // Show action buttons
+    document.getElementById('actionButtons').classList.add('active');
+
+    // Display summary modal
+    const totalOriginal = store.compressedBlobs.reduce((acc, curr) => acc + curr.originalSize, 0);
+    const totalCompressed = store.compressedBlobs.reduce((acc, curr) => acc + curr.compressedSize, 0);
+    const totalSaved = totalOriginal - totalCompressed;
+    const reduction = totalOriginal > 0 ? ((1 - totalCompressed / totalOriginal) * 100).toFixed(1) : '0';
+
+    Modal.show({
+        original: totalOriginal,
+        compressed: totalCompressed,
+        reduction: reduction,
+        saved: totalSaved > 0 ? totalSaved : 0,
+        title: 'Bulk Compression Complete',
+        message: `Successfully processed ${store.compressedBlobs.length} images.`
+    });
+}
+
 export function downloadFile() {
+    if (store.activeTool === 'BULK COMPRESS') {
+        if (!store.compressedBlobs || store.compressedBlobs.length === 0) return;
+        
+        store.compressedBlobs.forEach((item, index) => {
+            setTimeout(() => {
+                const url = URL.createObjectURL(item.blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `compressed_${item.name}`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }, index * 200);
+        });
+        return;
+    }
+
     if (!store.compressedBlob) return;
     const url = URL.createObjectURL(store.compressedBlob);
     const a = document.createElement('a');
     a.href = url;
     
     let filename = `kbify_${Date.now()}`;
-    if (store.activeTool === 'Merge PDF') {
+    if (store.activeTool === 'MERGE PDF') {
         filename = 'merged_document.pdf';
-    } else if (store.activeTool === 'Image Converter') {
+    } else if (store.activeTool === 'IMAGE CONVERTER') {
         const ext = store.compressedBlob.type.split('/')[1];
         filename = `converted_${store.originalFile.name.split('.')[0]}.${ext}`;
     } else {
@@ -206,3 +299,4 @@ export function downloadFile() {
     a.click();
     URL.revokeObjectURL(url);
 }
+

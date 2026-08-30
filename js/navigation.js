@@ -3,6 +3,56 @@ import { store, subscribe } from './state.js';
 import { TOOLS, SECTIONS } from './tools/registry.js';
 import { reset } from './tools/common.js';
 import { renderInEditor } from './tools/pdf/editor.js';
+import { Toast } from './utils/ui-utils.js';
+
+let pdfLibrariesPromise = null;
+
+export function ensurePDFLibrariesLoaded() {
+    if (pdfLibrariesPromise) return pdfLibrariesPromise;
+
+    pdfLibrariesPromise = (async () => {
+        const promises = [];
+
+        if (!window.PDFLib) {
+            promises.push(new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
+                script.onload = resolve;
+                script.onerror = () => {
+                    pdfLibrariesPromise = null;
+                    reject(new Error('Failed to load PDF engine. Please check your network.'));
+                };
+                document.body.appendChild(script);
+            }));
+        }
+
+        if (!window.pdfjsLib) {
+            promises.push(new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+                script.onload = resolve;
+                script.onerror = () => {
+                    pdfLibrariesPromise = null;
+                    reject(new Error('Failed to load PDF viewer engine. Please check your network.'));
+                };
+                document.body.appendChild(script);
+            }));
+        }
+
+        if (promises.length > 0) {
+            Toast.show('Loading PDF Engine...', 'info');
+            try {
+                await Promise.all(promises);
+                Toast.show('PDF Engine Loaded!', 'success');
+            } catch (err) {
+                Toast.show(err.message, 'error');
+                throw err;
+            }
+        }
+    })();
+
+    return pdfLibrariesPromise;
+}
 
 // --- Reactive State Subscriptions ---
 
@@ -48,28 +98,44 @@ export function initToolGrid() {
 
     grid.innerHTML = Object.entries(TOOLS).map(([name, config]) => `
         <div class="tool-card ${config.type}-tool" data-tool="${name}">
-            <div class="tool-card-icon" style="color: white; background: ${config.color};">
+            <div class="tool-card-icon" style="color: ${config.color};">
                 ${config.icon}
             </div>
-            <div class="tool-card-title">${name}</div>
+            <div class="tool-card-info">
+                <div class="tool-card-title">${config.label}</div>
+                <div class="tool-card-description">${config.description}</div>
+            </div>
         </div>
     `).join('') + `
         <div class="tool-card coming-soon" data-tool="COMING SOON">
             <div class="tool-card-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
             </div>
-            <div class="tool-card-title">More New Tools Coming Soon</div>
+            <div class="tool-card-info">
+                <div class="tool-card-title">More New Tools</div>
+                <div class="tool-card-description">New compression tools are on the way</div>
+            </div>
         </div>
     `;
     
-    updateSectionUI(store.currentSection);
+    updateSectionUI(store.currentSection, false);
 }
 
-function updateSectionUI(sectionId) {
+function updateSectionUI(sectionId, shouldScroll = true) {
     const section = SECTIONS[sectionId] || SECTIONS.dashboard;
     
     if (UI.mainTitle) UI.mainTitle.textContent = section.title;
     if (UI.mainSubtitle) UI.mainSubtitle.textContent = section.subtitle;
+
+    const header = document.querySelector('header');
+    if (header) {
+        header.style.display = (sectionId === 'dashboard' || sectionId === 'image' || sectionId === 'pdf') ? 'none' : 'flex';
+    }
+
+    const footer = document.querySelector('footer');
+    if (footer) {
+        footer.style.display = (sectionId === 'dashboard') ? 'flex' : 'none';
+    }
 
     // Toggle Nav Active State
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -82,15 +148,27 @@ function updateSectionUI(sectionId) {
         card.style.display = (sectionId === 'dashboard' || tool?.type === sectionId) ? 'flex' : 'none';
     });
 
-    const container = document.querySelector('.container');
-    if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
+    if (shouldScroll) {
+        const container = document.querySelector('.container');
+        if (container) container.scrollTo({ top: 0 });
+    }
 }
 
 function renderTool(toolName) {
     const tool = TOOLS[toolName];
     if (!tool) return;
 
+    const header = document.querySelector('header');
+    if (header) header.style.display = 'flex';
+
+    const footer = document.querySelector('footer');
+    if (footer) footer.style.display = 'none';
+
     const isPDF = tool.type === 'pdf';
+    if (isPDF) {
+        ensurePDFLibrariesLoaded().catch(() => {});
+    }
+
     const isEditor = toolName === 'PDF EDITOR';
 
     const isConverter = toolName === 'IMAGE CONVERTER';
@@ -98,21 +176,38 @@ function renderTool(toolName) {
 
     UI.toolDashboard.style.display = 'none';
     UI.mainCompressorCard.classList.add('active');
-    UI.activeToolIndicator.textContent = toolName;
+    
+    // Landscape layout for standard compressors (exclude visual editor and merger)
+    if (toolName !== 'PDF EDITOR' && toolName !== 'MERGE PDF') {
+        UI.mainCompressorCard.classList.add('landscape-layout');
+    } else {
+        UI.mainCompressorCard.classList.remove('landscape-layout');
+    }
+
+    UI.activeToolIndicator.textContent = tool.label;
     UI.activeToolIndicator.style.color = tool.color;
-    UI.mainTitle.textContent = toolName;
+    UI.mainTitle.textContent = tool.label;
     
     // Dynamic Subtitle
     UI.mainSubtitle.textContent = isEditor 
         ? "Click anywhere on the PDF pages to add new text. Drag to move, or click text to edit."
-        : `Upload your ${isMerger || toolName === 'BULK COMPRESS' ? 'files' : 'file'} to begin ${toolName.toLowerCase()}`;
+        : `Upload your ${isMerger || toolName === 'BULK COMPRESS' ? 'files' : 'file'} to begin ${tool.label.toLowerCase()}`;
     
     // Toggle Tool-Specific UI Elements
-    UI.imageOptions.style.display = (isPDF || isConverter) ? 'none' : 'block';
+    const isFastSqueeze = toolName === 'FAST SQUEEZE';
+    UI.imageOptions.style.display = (isPDF || isConverter || isFastSqueeze) ? 'none' : 'block';
     UI.pdfOptions.style.display = (isPDF && !isEditor && !isMerger) ? 'block' : 'none';
     UI.pdfEditorWorkspace.style.display = isEditor ? 'block' : 'none';
     UI.converterOptions.style.display = isConverter ? 'block' : 'none';
     UI.mergerOptions.style.display = isMerger ? 'block' : 'none';
+
+    // Handle Shared Selected Files list visibility and title
+    if (isMerger || toolName === 'BULK COMPRESS') {
+        UI.selectedFilesContainer.style.display = (store.originalFiles && store.originalFiles.length > 0) ? 'block' : 'none';
+        UI.fileListLabel.textContent = isMerger ? 'PDF Files to Merge' : 'Images to Compress';
+    } else {
+        UI.selectedFilesContainer.style.display = 'none';
+    }
     
     // Manage Global Sections visibility
     if (isEditor || isMerger) {
@@ -121,7 +216,7 @@ function renderTool(toolName) {
     }
     
     // Update Button Text
-    UI.processBtn.textContent = isEditor ? 'Save & Download' : (isMerger ? 'Merge & Save' : (isPDF ? 'Process PDF' : 'Compress Now'));
+    UI.processBtn.textContent = isEditor ? 'Save & Download' : (isMerger ? 'Merge & Save' : (isPDF ? 'Process PDF' : (isFastSqueeze ? 'Squeeze Now' : 'Compress Now')));
 
     // Multi-file support
     if (isMerger || toolName === 'BULK COMPRESS') {
@@ -132,7 +227,7 @@ function renderTool(toolName) {
 
     // Trigger visual editor if file already exists
     if (isEditor && store.originalFile) {
-        renderInEditor(store.originalFile);
+        ensurePDFLibrariesLoaded().then(() => renderInEditor(store.originalFile));
     }
 
     // Update file input configuration
@@ -144,6 +239,7 @@ function renderTool(toolName) {
 
 function renderDashboard() {
     UI.mainCompressorCard.classList.remove('active');
+    UI.mainCompressorCard.classList.remove('landscape-layout');
     UI.toolDashboard.style.display = 'grid';
     updateSectionUI(store.currentSection);
 }
@@ -175,5 +271,7 @@ const UI = {
     get processBtn() { return document.getElementById('processActionButton'); },
     get customSizeInput() { return document.getElementById('customSize'); },
     get converterOptions() { return document.getElementById('converterOptions'); },
-    get mergerOptions() { return document.getElementById('mergerOptions'); }
+    get mergerOptions() { return document.getElementById('mergerOptions'); },
+    get selectedFilesContainer() { return document.getElementById('selectedFilesContainer'); },
+    get fileListLabel() { return document.getElementById('fileListLabel'); }
 };

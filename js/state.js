@@ -21,6 +21,7 @@ export const store = new Proxy({
     originalFile: null,
     originalFiles: [],
     compressedBlob: null,
+    compressedBlobs: [],
     selectedSize: 'custom',
     currentFileType: 'image',
     activeTool: null,  // Never persist — always start fresh

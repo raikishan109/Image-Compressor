@@ -21,7 +21,7 @@ const UI = {
 
 // Auto-render when a new file is uploaded in PDF Editor mode
 subscribe('originalFile', (file) => {
-    if (file && store.activeTool === 'PDF Editor') {
+    if (file && store.activeTool === 'PDF EDITOR') {
         renderInEditor(file);
     }
 });
@@ -125,18 +125,9 @@ function spawnTextElement(parent, x, y, pageNum) {
  * Handle HTML5 drag behavior within the page boundaries
  */
 function setupDragging(el, container) {
-    let isDragging = false;
     let offsetX, offsetY;
 
-    el.onmousedown = (e) => {
-        if (e.target.className === 'pdf-delete-btn') return;
-        isDragging = true;
-        offsetX = e.clientX - el.offsetLeft;
-        offsetY = e.clientY - el.offsetTop;
-    };
-
-    document.onmousemove = (e) => {
-        if (!isDragging) return;
+    const onMouseMove = (e) => {
         const rect = container.getBoundingClientRect();
         const nx = Math.max(0, Math.min(e.clientX - offsetX, rect.width - el.offsetWidth));
         const ny = Math.max(0, Math.min(e.clientY - offsetY, rect.height - el.offsetHeight));
@@ -144,7 +135,18 @@ function setupDragging(el, container) {
         el.style.top = `${ny}px`;
     };
 
-    document.onmouseup = () => isDragging = false;
+    const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    el.onmousedown = (e) => {
+        if (e.target.className === 'pdf-delete-btn') return;
+        offsetX = e.clientX - el.offsetLeft;
+        offsetY = e.clientY - el.offsetTop;
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    };
 }
 
 /**
@@ -236,4 +238,11 @@ function rgbToHex(rgb) {
     if (!parts) return '#000000';
     const toHex = (c) => parseInt(c).toString(16).padStart(2, '0');
     return `#${toHex(parts[0])}${toHex(parts[1])}${toHex(parts[2])}`;
+}
+
+export function clearEditorState() {
+    textElements = [];
+    activeElement = null;
+    const container = document.getElementById('pdfVisualContainer');
+    if (container) container.innerHTML = '';
 }

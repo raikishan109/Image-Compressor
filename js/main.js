@@ -2,7 +2,7 @@
 import { store } from './state.js';
 import { initTheme, toggleTheme } from './theme.js';
 import { toggleSidebar } from './sidebar.js';
-import { switchSection, openTool, closeTool, selectSize, initToolGrid } from './navigation.js';
+import { switchSection, openTool, closeTool, selectSize, initToolGrid, ensurePDFLibrariesLoaded } from './navigation.js';
 import { handleFileSelect, initDragAndDrop } from './utils/file-utils.js';
 import { processFile, downloadFile } from './tools/image/compressor.js';
 import { reset } from './tools/common.js';
@@ -23,6 +23,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 3. Bootstrap from initial state
         bootstrap();
+
+        // 4. Idle prefetch for PDF engines (non-blocking)
+        if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(() => {
+                ensurePDFLibrariesLoaded().catch(() => {});
+            });
+        } else {
+            setTimeout(() => {
+                ensurePDFLibrariesLoaded().catch(() => {});
+            }, 3000);
+        }
     } catch (error) {
         console.error('Bootstrapping failed:', error);
         Toast.show('Application failed to load correctly. Please refresh.', 'error');

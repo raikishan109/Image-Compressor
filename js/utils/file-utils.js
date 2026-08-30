@@ -1,6 +1,8 @@
 // utils/file-utils.js
 import { store } from '../state.js';
-import { Toast, formatFileSize } from './ui-utils.js';
+import { Toast, formatFileSize, escapeHTML } from './ui-utils.js';
+
+let activePreviewUrl = null;
 
 /**
  * Entry point for file selection from input
@@ -28,8 +30,31 @@ export function handleMultipleFiles(files) {
         Toast.show('Some files were skipped due to invalid format.', 'warning');
     }
 
-    store.originalFiles = validFiles;
-    updateMultiFileUI(validFiles);
+    // Accumulate files in multi-file mode
+    const currentFiles = store.originalFiles || [];
+    const newFiles = validFiles.filter(nf => !currentFiles.some(cf => cf.name === nf.name && cf.size === nf.size));
+    
+    store.originalFiles = [...currentFiles, ...newFiles];
+    updateMultiFileUI(store.originalFiles);
+}
+
+export function removeFileFromList(index) {
+    const files = [...store.originalFiles];
+    files.splice(index, 1);
+    store.originalFiles = files;
+    
+    if (files.length === 0) {
+        const container = document.getElementById('selectedFilesContainer');
+        if (container) container.style.display = 'none';
+        
+        const options = document.getElementById('optionsSection');
+        options?.classList.remove('active');
+        
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) fileInput.value = '';
+    } else {
+        updateMultiFileUI(files);
+    }
 }
 
 /**
@@ -37,6 +62,11 @@ export function handleMultipleFiles(files) {
  */
 export function handleFile(file) {
     if (!file) return;
+
+    if (activePreviewUrl) {
+        URL.revokeObjectURL(activePreviewUrl);
+        activePreviewUrl = null;
+    }
 
     // 1. Validate Image Type - More permissive for mobile browsers
     if (store.currentFileType === 'image') {
@@ -77,23 +107,25 @@ function updateFileUI(file) {
     };
 
     if (store.currentFileType === 'image') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                if (UI_ELS.preview) {
-                    UI_ELS.preview.src = e.target.result;
-                    UI_ELS.preview.style.display = 'block';
-                }
-                if (UI_ELS.size) UI_ELS.size.textContent = formatFileSize(file.size);
-                if (UI_ELS.dim) UI_ELS.dim.textContent = `${img.width} × ${img.height}`;
+        const url = URL.createObjectURL(file);
+        activePreviewUrl = url;
+        const img = new Image();
+        img.onload = () => {
+            if (UI_ELS.preview) {
+                UI_ELS.preview.src = url;
+                UI_ELS.preview.style.display = 'block';
+            }
+            if (UI_ELS.size) UI_ELS.size.textContent = formatFileSize(file.size);
+            if (UI_ELS.dim) UI_ELS.dim.textContent = `${img.width} × ${img.height}`;
 
-                UI_ELS.opt?.classList.add('active');
-                UI_ELS.pre?.classList.add('active');
-            };
-            img.src = e.target.result;
+            UI_ELS.opt?.classList.add('active');
+            UI_ELS.pre?.classList.add('active');
         };
-        reader.readAsDataURL(file);
+        img.onerror = () => {
+            URL.revokeObjectURL(url);
+            activePreviewUrl = null;
+        };
+        img.src = url;
     } else {
         // PDF Workflow
         if (UI_ELS.preview) UI_ELS.preview.style.display = 'none';
@@ -103,7 +135,7 @@ function updateFileUI(file) {
         UI_ELS.opt?.classList.add('active');
         
         // Hide standard preview stats for PDF Editor mode
-        if (store.activeTool === 'PDF Editor' || store.activeTool === 'Merge PDF') {
+        if (store.activeTool === 'PDF EDITOR' || store.activeTool === 'MERGE PDF') {
             UI_ELS.pre?.classList.remove('active');
         } else {
             UI_ELS.pre?.classList.add('active');
@@ -113,20 +145,35 @@ function updateFileUI(file) {
 
 function updateMultiFileUI(files) {
     const list = document.getElementById('selectedFilesList');
+    const container = document.getElementById('selectedFilesContainer');
     const options = document.getElementById('optionsSection');
-    if (!list || !options) return;
+    if (!list || !options || !container) return;
 
     options.classList.add('active');
+    container.style.display = 'block';
+
     list.innerHTML = files.map((file, index) => `
         <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-secondary); padding: 0.5rem 0.8rem; border-radius: 6px; border: 1px solid var(--border-color);">
-            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.85rem; max-width: 70%;">
-                ${index + 1}. ${file.name}
+            <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.85rem; max-width: 60%;">
+                ${index + 1}. ${escapeHTML(file.name)}
             </div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary);">
-                ${formatFileSize(file.size)}
+            <div style="display: flex; align-items: center; gap: 0.8rem;">
+                <div style="font-size: 0.75rem; color: var(--text-secondary);">
+                    ${formatFileSize(file.size)}
+                </div>
+                <button class="remove-file-btn" data-index="${index}" style="background: none; border: none; color: var(--error); cursor: pointer; padding: 2px; font-size: 1.25rem; display: flex; align-items: center; line-height: 1;">&times;</button>
             </div>
         </div>
     `).join('');
+
+    // Add click listeners to remove buttons
+    list.querySelectorAll('.remove-file-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const idx = parseInt(btn.getAttribute('data-index'));
+            removeFileFromList(idx);
+        };
+    });
 }
 
 /**

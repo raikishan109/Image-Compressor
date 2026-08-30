@@ -48,13 +48,7 @@ export async function convertImage() {
 }
 
 function displayConvertResults(mime) {
-    const url = URL.createObjectURL(store.compressedBlob);
-    const preview = document.getElementById('compressedPreview');
-    if (preview) {
-        preview.src = url;
-        preview.style.display = 'block';
-    }
-
+    // Preview image is reactively rendered by ui-utils.js subscription to store.compressedBlob
     document.getElementById('compressedSize').textContent = formatFileSize(store.compressedBlob.size);
     document.getElementById('reduction').textContent = 'N/A (Convert)';
     document.getElementById('previewSection').classList.add('active');

@@ -26,6 +26,27 @@ subscribe('isLoading', (loading) => {
     }
 });
 
+let currentPreviewUrl = null;
+
+subscribe('compressedBlob', (blob) => {
+    if (currentPreviewUrl) {
+        URL.revokeObjectURL(currentPreviewUrl);
+        currentPreviewUrl = null;
+    }
+
+    const preview = document.getElementById('compressedPreview');
+    if (!preview) return;
+
+    if (blob) {
+        currentPreviewUrl = URL.createObjectURL(blob);
+        preview.src = currentPreviewUrl;
+        preview.style.display = 'block';
+    } else {
+        preview.removeAttribute('src');
+        preview.style.display = 'none';
+    }
+});
+
 export const Toast = {
     show(message, type = 'success') {
         const id = type === 'success' ? 'successMessage' : 'errorMessage';
@@ -49,4 +70,17 @@ export function formatFileSize(bytes) {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+export function escapeHTML(str) {
+    if (!str) return '';
+    return str.replace(/[&<>'"]/g, 
+        tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag] || tag)
+    );
 }

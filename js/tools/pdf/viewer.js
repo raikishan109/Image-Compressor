@@ -10,6 +10,16 @@ export const PDFViewer = {
      * Load and render all pages of a PDF
      */
     async render(file, container) {
+        // Release resources of previous PDF Doc to prevent memory leaks
+        if (this.pdfDoc) {
+            try {
+                await this.pdfDoc.destroy();
+            } catch (e) {
+                console.warn('Failed to destroy previous PDF doc:', e);
+            }
+            this.pdfDoc = null;
+        }
+
         this.container = container;
         this.container.innerHTML = '<div class="loader active"><div class="spinner"></div></div>';
 
@@ -28,7 +38,13 @@ export const PDFViewer = {
             }
         } catch (error) {
             console.error('PDF Viewer failed:', error);
-            this.container.innerHTML = `<div class="error-message active">Failed to render PDF: ${error.message}</div>`;
+            
+            // Secure rendering: Use textContent to prevent HTML injection / XSS
+            const errorEl = document.createElement('div');
+            errorEl.className = 'error-message active';
+            errorEl.textContent = `Failed to render PDF: ${error.message}`;
+            this.container.innerHTML = '';
+            this.container.appendChild(errorEl);
         }
     },
 
