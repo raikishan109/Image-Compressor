@@ -124,15 +124,9 @@ export function initToolGrid() {
 function updateSectionUI(sectionId, shouldScroll = true) {
     const section = SECTIONS[sectionId] || SECTIONS.dashboard;
     
-    if (UI.mainTitle) UI.mainTitle.textContent = section.title;
-    if (UI.mainSubtitle) UI.mainSubtitle.textContent = section.subtitle;
 
-    const header = document.querySelector('header');
-    if (header) {
-        header.style.display = (sectionId === 'dashboard' || sectionId === 'image' || sectionId === 'pdf') ? 'none' : 'flex';
-    }
 
-    const footer = document.querySelector('footer');
+    const footer = document.getElementById('dashboardFooter');
     if (footer) {
         footer.style.display = (sectionId === 'dashboard') ? 'flex' : 'none';
     }
@@ -158,10 +152,9 @@ function renderTool(toolName) {
     const tool = TOOLS[toolName];
     if (!tool) return;
 
-    const header = document.querySelector('header');
-    if (header) header.style.display = 'flex';
 
-    const footer = document.querySelector('footer');
+
+    const footer = document.getElementById('dashboardFooter');
     if (footer) footer.style.display = 'none';
 
     const isPDF = tool.type === 'pdf';
@@ -186,12 +179,7 @@ function renderTool(toolName) {
 
     UI.activeToolIndicator.textContent = tool.label;
     UI.activeToolIndicator.style.color = tool.color;
-    UI.mainTitle.textContent = tool.label;
-    
-    // Dynamic Subtitle
-    UI.mainSubtitle.textContent = isEditor 
-        ? "Click anywhere on the PDF pages to add new text. Drag to move, or click text to edit."
-        : `Upload your ${isMerger || toolName === 'BULK COMPRESS' ? 'files' : 'file'} to begin ${tool.label.toLowerCase()}`;
+
     
     // Toggle Tool-Specific UI Elements
     UI.imageOptions.style.display = (isPDF || isConverter) ? 'none' : 'block';
@@ -255,8 +243,7 @@ export function selectSize(size, element) {
 
 // --- DOM Cache for performance ---
 const UI = {
-    get mainTitle() { return document.getElementById('mainTitle'); },
-    get mainSubtitle() { return document.getElementById('mainSubtitle'); },
+
     get toolDashboard() { return document.getElementById('toolDashboard'); },
     get mainCompressorCard() { return document.getElementById('mainCompressorCard'); },
     get activeToolIndicator() { return document.getElementById('activeToolIndicator'); },

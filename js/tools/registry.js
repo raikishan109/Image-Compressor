@@ -86,15 +86,15 @@ export const TOOLS = {
 
 export const SECTIONS = {
     dashboard: {
-        title: 'KBIFY ULTIMATE SUITE',
-        subtitle: 'Choose a tool to start compressing your files'
+        title: 'KBify Image Suite',
+        subtitle: 'Choose a tool to start compressing your images'
     },
     image: {
-        title: 'KBIFY IMAGE SUITE',
+        title: 'KBify Image Suite',
         subtitle: 'Choose an image tool to start compressing'
     },
     pdf: {
-        title: 'KBIFY DOCUMENT SUITE',
+        title: 'KBify Document Suite',
         subtitle: 'Choose a document tool to start compressing'
     }
 };

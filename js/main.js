@@ -1,12 +1,12 @@
 // main.js - Application Bootstrapper
-import { initTheme, toggleTheme } from './theme.js?v=4';
-import { toggleSidebar } from './sidebar.js?v=4';
-import { switchSection, openTool, closeTool, selectSize, initToolGrid, ensurePDFLibrariesLoaded } from './navigation.js?v=4';
-import { handleFileSelect, initDragAndDrop } from './utils/file-utils.js?v=4';
-import { processFile, downloadFile } from './tools/image/compressor.js?v=4';
-import { reset } from './tools/common.js?v=4';
-import { Modal } from './components/Modal.js?v=4';
-import { Toast } from './utils/ui-utils.js?v=4';
+import { initTheme, toggleTheme } from './theme.js?v=1';
+import { toggleSidebar } from './sidebar.js?v=1';
+import { switchSection, openTool, closeTool, selectSize, initToolGrid, ensurePDFLibrariesLoaded } from './navigation.js?v=1';
+import { handleFileSelect, initDragAndDrop } from './utils/file-utils.js?v=1';
+import { processFile, downloadFile } from './tools/image/compressor.js?v=1';
+import { reset } from './tools/common.js?v=1';
+import { Modal } from './components/Modal.js?v=1';
+import { Toast } from './utils/ui-utils.js?v=1';
 let deferredPrompt;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function registerSW() {
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js?v=4')
+        navigator.serviceWorker.register('./sw.js?v=1')
             .then(reg => {
                 reg.update();
             })

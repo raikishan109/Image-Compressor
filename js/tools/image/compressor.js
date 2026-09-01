@@ -141,7 +141,6 @@ async function runCompressionSearch(file, targetSizeBytes, baseQuality) {
             return { blob, convertedToJPEG };
         }
 
-        await new Promise(resolve => setTimeout(resolve, 50));
     }
     return { blob: lastBlob, convertedToJPEG };
 }

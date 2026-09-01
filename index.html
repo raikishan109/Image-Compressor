@@ -30,8 +30,9 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/main.css?v=27">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=optional">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=optional" rel="stylesheet">
+    <link rel="stylesheet" href="css/main.css?v=1">
 </head>
 
 <body>
@@ -56,10 +57,12 @@
             </div>
         </div>
         <div class="theme-toggle" role="button" aria-label="Toggle Dark/Light Mode" tabindex="0">
-            <svg class="theme-icon" id="themeIcon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            <svg class="theme-icon" id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path class="sun-icon" d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z" />
+                <path class="moon-icon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
-            <span id="themeText">Dark</span>
+            <span class="theme-text-light">Light</span>
+            <span class="theme-text-dark">Dark</span>
         </div>
     </nav>
 
@@ -83,94 +86,15 @@
     </div>
 
     <div class="container">
-        <header>
-            <h1 id="mainTitle">KBify Image Suite</h1>
-            <p class="subtitle" id="mainSubtitle">Choose a tool to start compressing your images</p>
-        </header>
 
-        <div class="tool-grid" id="toolDashboard">
-            <div class="tool-card image-tool" data-tool="JPG COMPRESSOR">
-                <div class="tool-card-icon" style="color: #e11d48;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                </div>
-                <div class="tool-card-info">
-                    <div class="tool-card-title">JPG Compressor</div>
-                    <div class="tool-card-description">Compress JPG images to custom sizes</div>
-                </div>
-            </div>
-            <div class="tool-card image-tool" data-tool="PNG COMPRESSOR">
-                <div class="tool-card-icon" style="color: #0284c7;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                </div>
-                <div class="tool-card-info">
-                    <div class="tool-card-title">PNG Compressor</div>
-                    <div class="tool-card-description">Reduce PNG size while maintaining quality</div>
-                </div>
-            </div>
-            <div class="tool-card image-tool" data-tool="WEBP COMPRESSOR">
-                <div class="tool-card-icon" style="color: #059669;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                </div>
-                <div class="tool-card-info">
-                    <div class="tool-card-title">WEBP Compressor</div>
-                    <div class="tool-card-description">Efficiently compress WEBP images</div>
-                </div>
-            </div>
-            <div class="tool-card image-tool" data-tool="BULK COMPRESS">
-                <div class="tool-card-icon" style="color: #7c3aed;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="13" height="13" x="9" y="9" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/><path d="M13 13h5v5"/></svg>
-                </div>
-                <div class="tool-card-info">
-                    <div class="tool-card-title">Bulk Compress</div>
-                    <div class="tool-card-description">Compress multiple images at once</div>
-                </div>
-            </div>
-            <div class="tool-card pdf-tool" data-tool="PDF COMPRESSOR">
-                <div class="tool-card-icon" style="color: #dc2626;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
-                </div>
-                <div class="tool-card-info">
-                    <div class="tool-card-title">PDF Compressor</div>
-                    <div class="tool-card-description">Reduce PDF file size by up to 80% while maintaining quality</div>
-                </div>
-            </div>
-            <div class="tool-card pdf-tool" data-tool="PDF EDITOR">
-                <div class="tool-card-icon" style="color: #ea580c;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </div>
-                <div class="tool-card-info">
-                    <div class="tool-card-title">PDF Editor</div>
-                    <div class="tool-card-description">Edit, draw, and modify text in PDF documents</div>
-                </div>
-            </div>
-            <div class="tool-card image-tool" data-tool="IMAGE CONVERTER">
-                <div class="tool-card-icon" style="color: #0d9488;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-                </div>
-                <div class="tool-card-info">
-                    <div class="tool-card-title">Image Converter</div>
-                    <div class="tool-card-description">Convert between JPG, PNG, and WEBP formats</div>
-                </div>
-            </div>
-            <div class="tool-card pdf-tool" data-tool="MERGE PDF">
-                <div class="tool-card-icon" style="color: #4f46e5;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/><path d="M16 2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M12 6v12"/><path d="m9 15 3 3 3-3"/><path d="m9 9 3-3 3 3"/></svg>
-                </div>
-                <div class="tool-card-info">
-                    <div class="tool-card-title">Merge PDF</div>
-                    <div class="tool-card-description">Combine multiple PDF files into a single document</div>
-                </div>
-            </div>
-            <div class="tool-card coming-soon" data-tool="COMING SOON">
-                <div class="tool-card-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-                </div>
-                <div class="tool-card-info">
-                    <div class="tool-card-title">More New Tools</div>
-                    <div class="tool-card-description">New compression tools are on the way</div>
-                </div>
-            </div>
-        </div>
+        <div class="tool-grid" id="toolDashboard"></div>
+
+        <!-- Dashboard Footer -->
+        <footer class="footer" id="dashboardFooter">
+            <p>© 2026 KBify. All rights reserved.</p>
+            <p>Built By <a href="https://github.com/HackScouts" target="_blank" rel="noopener noreferrer" class="hackscouts-link"><span class="team-text">Team</span> <span class="hack-text">Hack</span><span class="scouts-text">Scouts</span></a></p>
+            <p class="footer-version">v1.0</p>
+        </footer>
 
         <div class="main-card" id="mainCompressorCard">
             <!-- Back Button -->
@@ -221,7 +145,7 @@
                         </div>
                     </div>
 
-                    <div id="pdfOptions" style="display: none;">
+                    <div id="pdfOptions" class="tool-option-panel">
                         <div class="option-group">
                             <label class="option-label">PDF Actions</label>
                             <div class="size-options">
@@ -231,7 +155,7 @@
                         </div>
                     </div>
 
-                    <div id="converterOptions" style="display: none;">
+                    <div id="converterOptions" class="tool-option-panel">
                         <div class="option-group">
                             <label class="option-label">Target Format</label>
                             <div class="size-options">
@@ -242,34 +166,34 @@
                         </div>
                     </div>
 
-                    <div id="mergerOptions" style="display: none;">
+                    <div id="mergerOptions" class="tool-option-panel">
                         <div class="option-group">
                             <label class="option-label">Merge Settings</label>
-                            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                            <p class="option-hint-text">
                                 Upload multiple PDF files to combine them into a single document.
                             </p>
                         </div>
                     </div>
 
-                    <div id="selectedFilesContainer" style="display: none; margin-bottom: 1.5rem;">
+                    <div id="selectedFilesContainer" class="tool-option-panel selected-files-container">
                         <div class="option-group">
                             <label class="option-label" id="fileListLabel">Selected Files</label>
-                            <div id="selectedFilesList" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto; background: var(--bg-tertiary); padding: 1.25rem; border-radius: 8px;">
+                            <div id="selectedFilesList" class="selected-files-list">
                                 <!-- File list will appear here -->
                             </div>
                         </div>
                     </div>
 
                     <!-- Visual PDF Editor Workspace -->
-                    <div id="pdfEditorWorkspace" style="display: none; margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 2rem;">
-                        <div class="editor-toolbar" style="margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; background: var(--bg-tertiary); padding: 1rem; border-radius: 12px;">
-                            <button class="btn secondary" id="addTextTool" style="padding: 0.5rem 1rem;">
+                    <div id="pdfEditorWorkspace" class="tool-option-panel pdf-editor-workspace">
+                        <div class="editor-toolbar">
+                            <button class="btn secondary editor-tool-btn" id="addTextTool">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
                                 Add Text
                             </button>
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <label style="font-size: 0.8rem;">Size:</label>
-                                <select id="fontSizeSelect" style="background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 5px;">
+                            <div class="editor-control-group">
+                                <label class="editor-control-label">Size:</label>
+                                <select id="fontSizeSelect" class="editor-select">
                                     <option value="12">12</option>
                                     <option value="16" selected>16</option>
                                     <option value="20">20</option>
@@ -277,17 +201,17 @@
                                     <option value="32">32</option>
                                 </select>
                             </div>
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <label style="font-size: 0.8rem;">Color:</label>
-                                <input type="color" id="textColorSelect" value="#000000" style="width: 30px; height: 30px; border: none; padding: 0; background: none; cursor: pointer;">
+                            <div class="editor-control-group">
+                                <label class="editor-control-label">Color:</label>
+                                <input type="color" id="textColorSelect" value="#000000" class="editor-color-input">
                             </div>
                         </div>
-                        <div id="pdfVisualContainer" style="max-height: 80vh; overflow: auto; background: #333; border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; gap: 1.5rem; align-items: center;">
+                        <div id="pdfVisualContainer" class="pdf-visual-container">
                             <!-- Pages will be rendered here -->
                         </div>
                     </div>
 
-                    <div style="text-align: center; margin-top: 1rem;">
+                    <div class="process-action-wrapper">
                         <button class="btn" id="processActionButton">Process Now</button>
                     </div>
                 </div>
@@ -352,11 +276,6 @@
                 Compress Another
             </button>
         </div>
-        <footer class="footer">
-            <p>© 2026 KBify. All rights reserved.</p>
-            <p>Built By <a href="https://github.com/HackScouts" target="_blank" rel="noopener noreferrer" class="hackscouts-link"><span class="team-text">Team</span> <span class="hack-text">Hack</span><span class="scouts-text">Scouts</span></a></p>
-            <p class="footer-version">v1.0</p>
-        </footer>
     </div>
 
     <div class="modal-overlay" id="successModal">
@@ -407,7 +326,7 @@
             </div>
         </div>
     </div>
-    <script type="module" src="js/main.js?v=8"></script>
+    <script type="module" src="js/main.js?v=1"></script>
 </body>
 
 </html>
