@@ -21,7 +21,7 @@
         if ('caches' in window) {
             caches.keys().then(names => {
                 names.forEach(name => {
-                    if (name !== 'kbify-v4.0') {
+                    if (name !== 'kbify-v1.0') {
                         caches.delete(name);
                     }
                 });
@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/main.css?v=26">
+    <link rel="stylesheet" href="css/main.css?v=27">
 </head>
 
 <body>
@@ -355,7 +355,7 @@
         <footer class="footer">
             <p>© 2026 KBify. All rights reserved.</p>
             <p>Built By <a href="https://github.com/HackScouts" target="_blank" rel="noopener noreferrer" class="hackscouts-link"><span class="team-text">Team</span> <span class="hack-text">Hack</span><span class="scouts-text">Scouts</span></a></p>
-            <p class="footer-version">v1.6</p>
+            <p class="footer-version">v1.0</p>
         </footer>
     </div>
 
